@@ -1,0 +1,411 @@
+# Project Instructions
+
+Use the project specification and guidelines as you build the app.
+
+Write the complete code for every step. Do not get lazy.
+
+Your goal is to completely finish whatever I ask for.
+
+## Overview
+
+This is a web app template with RAG (Retrieval Augmented Generation) capabilities.
+
+## Tech Stack
+
+- Frontend: Next.js, Tailwind, Shadcn, Framer Motion
+- Backend: Postgres, Supabase, Drizzle ORM, Server Actions
+- Auth: Supabase Auth
+- Payments: Stripe
+- RAG: PDF Processing, OpenAI Embeddings, Supabase Vector Search
+- Deployment: Vercel
+
+## Project Structure
+
+```
+project/
+├─ app/
+│  ├─ (site)/
+│  │  ├─ layout.tsx               # Main site layout
+│  │  ├─ page.tsx                 # Landing/Home page
+│  │  ├─ auth/
+│  │  │  ├─ login/
+│  │  │  │  └─ page.tsx           # Login page
+│  │  │  ├─ signup/
+│  │  │  │  └─ page.tsx           # Signup page
+│  │  │  ├─ callback/route.ts     # Auth callback route
+│  │  ├─ dashboard/
+│  │  │  └─ page.tsx              # User dashboard
+│  │  ├─ chat/
+│  │  │  ├─ page.tsx              # Main chat interface
+│  │  │  ├─ [conversationId]/page.tsx  # Conversation detail
+│  │  ├─ businesses/
+│  │  │  ├─ [businessId]/
+│  │  │  │  ├─ dashboard/page.tsx # Business admin dashboard
+│  │  │  │  ├─ employees/page.tsx # Manage employees
+│  │  │  │  ├─ rag-manager/page.tsx    # Manage RAG
+│  │  ├─ admin/
+│  │  │  ├─ abante/
+│  │  │  │  └─ dashboard/page.tsx # Admin dashboard
+│  │  │  ├─ abante-employees/
+│  │  │  │  └─ page.tsx           # Manage Employees
+│  ├─ api/
+│  │  ├─ auth/route.ts            # Auth endpoint
+│  │  ├─ chat/messages/route.ts   # Chat messages
+│  │  ├─ business/
+│  │  │  ├─ upload-pdf/route.ts   # PDF upload
+│  │  │  ├─ manage-rag/route.ts   # RAG settings
+│  │  ├─ vector-search/route.ts   # Vector search
+│  │  ├─ subscription/route.ts    # Stripe payments
+│  │  ├─ analytics/route.ts       # Analytics
+├─ components/
+│  ├─ ui/                        # ShadCN components
+│  ├─ chat/                      # Chat components
+│  ├─ pdf-upload/                # PDF upload components
+├─ db/
+│  ├─ schema.ts                  # Drizzle schemas
+│  ├─ migrations/                # Migrations
+│  ├─ index.ts                   # DB connection
+├─ lib/
+│  ├─ auth/                      # Auth utilities
+│  ├─ stripe/                    # Stripe logic
+│  ├─ embeddings/                # Vector embeddings
+│  ├─ chunking/                  # PDF chunking
+│  ├─ rag/                       # Retrieval logic
+│  ├─ analytics/                 # Analytics logic
+│  ├─ vectorstore/               # Vector store
+├─ public/                       # Assets
+├─ styles/
+│  ├─ globals.css               # Global styles
+├─ utils/
+│  ├─ pdf.ts                    # PDF utilities
+│  ├─ roles.ts                  # Role logic
+│  ├─ constants.ts              # Constants
+├─ drizzle.config.ts
+├─ package.json
+├─ tsconfig.json
+└─ next.config.js
+```
+
+## Rules
+
+### General Rules
+
+- Use `@` to import anything from the project
+- Use kebab case for files/folders
+- Complete every step fully - no shortcuts
+
+### Environment Variables
+
+Required variables:
+```
+# Database
+DATABASE_URL=
+
+# Auth
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+
+# OpenAI
+OPENAI_API_KEY=
+
+# Stripe
+STRIPE_SECRET_KEY=
+STRIPE_WEBHOOK_SECRET=
+NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=
+```
+
+### Type Rules
+
+Example of core types for our RAG system:
+
+`types/rag-types.ts`
+```typescript
+export interface Document {
+  id: string
+  content: string
+  metadata: DocumentMetadata
+  embedding?: number[]
+}
+
+export interface DocumentMetadata {
+  source: string
+  businessId: string
+  pageNumber?: number
+  title?: string
+}
+
+export interface VectorSearchResult {
+  id: string
+  content: string
+  metadata: DocumentMetadata
+  similarity: number
+}
+
+export interface ChatMessage {
+  id: string
+  role: 'user' | 'assistant'
+  content: string
+  sources?: VectorSearchResult[]
+}
+```
+
+`types/business-types.ts`
+```typescript
+export interface Business {
+  id: string
+  name: string
+  ownerId: string
+  subscription: SubscriptionTier
+  maxDocuments: number
+  maxTokens: number
+}
+
+export type SubscriptionTier = 'free' | 'pro' | 'enterprise'
+
+export interface Employee {
+  id: string
+  businessId: string
+  userId: string
+  role: 'admin' | 'member'
+}
+```
+
+### Database Schemas
+
+`db/schema/documents-schema.ts`
+```typescript
+import { pgTable, text, timestamp, uuid, jsonb, vector } from "drizzle-orm/pg-core"
+
+export const documentsTable = pgTable("documents", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  businessId: uuid("business_id")
+    .references(() => businessesTable.id, { onDelete: "cascade" })
+    .notNull(),
+  content: text("content").notNull(),
+  metadata: jsonb("metadata").$type<DocumentMetadata>().notNull(),
+  embedding: vector("embedding", { dimensions: 1536 }),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date())
+})
+```
+
+`db/schema/businesses-schema.ts`
+```typescript
+import { pgEnum, pgTable, text, timestamp, uuid, integer } from "drizzle-orm/pg-core"
+
+export const subscriptionEnum = pgEnum("subscription", ["free", "pro", "enterprise"])
+
+export const businessesTable = pgTable("businesses", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  name: text("name").notNull(),
+  ownerId: text("owner_id").notNull(),
+  subscription: subscriptionEnum("subscription").notNull().default("free"),
+  maxDocuments: integer("max_documents").notNull().default(10),
+  maxTokens: integer("max_tokens").notNull().default(1000000),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+    .defaultNow()
+    .notNull()
+    .$onUpdate(() => new Date())
+})
+```
+
+### Server Actions
+
+`actions/rag/documents-actions.ts`
+```typescript
+"use server"
+
+import { db } from "@/db/db"
+import { documentsTable } from "@/db/schema"
+import { createClient } from "@/lib/supabase/server"
+import { generateEmbedding } from "@/lib/embeddings"
+import { chunkDocument } from "@/lib/chunking"
+import { ActionState } from "@/types"
+
+export async function uploadDocumentAction(
+  file: File,
+  businessId: string
+): Promise<ActionState<SelectDocument[]>> {
+  try {
+    const supabase = createClient()
+    
+    // Upload to Supabase Storage
+    const { data: fileData, error: uploadError } = await supabase
+      .storage
+      .from('documents')
+      .upload(`${businessId}/${file.name}`, file)
+    
+    if (uploadError) throw uploadError
+
+    // Process PDF and chunk content
+    const chunks = await chunkDocument(file)
+    
+    // Generate embeddings and store documents
+    const documents = await Promise.all(
+      chunks.map(async chunk => ({
+        businessId,
+        content: chunk.content,
+        metadata: {
+          source: file.name,
+          pageNumber: chunk.pageNumber,
+          title: file.name
+        },
+        embedding: await generateEmbedding(chunk.content)
+      }))
+    )
+
+    const savedDocs = await db.insert(documentsTable)
+      .values(documents)
+      .returning()
+
+    return {
+      isSuccess: true,
+      message: "Document uploaded and processed",
+      data: savedDocs
+    }
+  } catch (error) {
+    console.error("Error uploading document:", error)
+    return { isSuccess: false, message: "Failed to upload document" }
+  }
+}
+```
+
+### Components
+
+`components/chat/chat-interface.tsx`
+```typescript
+"use client"
+
+import { useChat } from "ai/react"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { ChatMessage } from "@/types"
+
+interface ChatInterfaceProps {
+  businessId: string
+  chatId: string
+}
+
+export function ChatInterface({ businessId, chatId }: ChatInterfaceProps) {
+  const { messages, input, handleInputChange, handleSubmit } = useChat({
+    api: `/api/chat/messages?businessId=${businessId}&chatId=${chatId}`,
+    onResponse: (response) => {
+      // Handle streaming response
+    }
+  })
+
+  return (
+    <div className="flex flex-col h-full">
+      <ScrollArea className="flex-1 p-4">
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`mb-4 ${
+              message.role === "user" ? "text-blue-600" : "text-gray-800"
+            }`}
+          >
+            <div className="font-medium">{message.role}</div>
+            <div className="mt-1">{message.content}</div>
+            {message.sources && (
+              <div className="mt-2 text-sm text-gray-500">
+                Sources:
+                {message.sources.map((source) => (
+                  <div key={source.id}>
+                    {source.metadata.title} - Page {source.metadata.pageNumber}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </ScrollArea>
+
+      <form onSubmit={handleSubmit} className="p-4 border-t">
+        <div className="flex gap-2">
+          <Input
+            value={input}
+            onChange={handleInputChange}
+            placeholder="Ask a question..."
+            className="flex-1"
+          />
+          <Button type="submit">Send</Button>
+        </div>
+      </form>
+    </div>
+  )
+}
+```
+
+### RAG Utilities
+
+`lib/embeddings/index.ts`
+```typescript
+import OpenAI from 'openai'
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+})
+
+export async function generateEmbedding(text: string): Promise<number[]> {
+  const response = await openai.embeddings.create({
+    model: "text-embedding-3-small",
+    input: text
+  })
+  
+  return response.data[0].embedding
+}
+```
+
+`lib/chunking/index.ts`
+```typescript
+import { PDFLoader } from 'langchain/document_loaders/fs/pdf'
+
+interface Chunk {
+  content: string
+  pageNumber: number
+}
+
+export async function chunkDocument(file: File): Promise<Chunk[]> {
+  const loader = new PDFLoader(file)
+  const docs = await loader.load()
+  
+  return docs.map(doc => ({
+    content: doc.pageContent,
+    pageNumber: doc.metadata.pageNumber
+  }))
+}
+```
+
+### Auth Rules
+
+- Use Supabase Auth
+- Import client from `@/lib/supabase`
+- Handle auth state with hooks
+- Protect routes with middleware
+
+### RAG Rules
+
+#### PDF Processing
+- Store files in Supabase storage
+- Parse PDFs in chunks
+- Generate embeddings with OpenAI
+- Store vectors in pgvector
+
+#### Vector Search
+- Use similarity search
+- Filter by metadata
+- Implement hybrid search when needed
+- Cache results appropriately
+
+### Payments Rules
+
+- Use Stripe
+- Handle webhooks securely
+- Implement proper error handling
+- Test with test keys first
