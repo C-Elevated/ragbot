@@ -50,13 +50,16 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        {/* Move script to client component to avoid hydration issues */}
         <script
           dangerouslySetInnerHTML={{
             __html: THEME_COLOR_SCRIPT,
           }}
+          key="theme-script"
+          suppressHydrationWarning
         />
       </head>
-      <body className="antialiased">
+      <body className="antialiased" suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
