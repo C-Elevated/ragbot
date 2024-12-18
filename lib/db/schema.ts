@@ -1,112 +1,67 @@
-import type { InferSelectModel } from 'drizzle-orm';
-import {
-  pgTable,
-  varchar,
-  timestamp,
-  json,
-  uuid,
-  text,
-  primaryKey,
-  foreignKey,
-  boolean,
-} from 'drizzle-orm/pg-core';
 
-export const user = pgTable('User', {
-  id: uuid('id').primaryKey().notNull().defaultRandom(),
-  email: varchar('email', { length: 64 }).notNull(),
-  password: varchar('password', { length: 64 }),
+import { pgTable, text, timestamp, uuid, boolean, numeric, jsonb, varchar } from 'drizzle-orm/pg-core';
+
+export const businesses = pgTable('businesses', {
+  id: uuid('id').primaryKey(),
+  ownerId: uuid('owner_id').notNull(),
+  name: text('name'),
+  isPublic: boolean('is_public').notNull().default(false),
+  publicAccessFee: numeric('public_access_fee'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
 });
 
-export type User = InferSelectModel<typeof user>;
-
-export const chat = pgTable('Chat', {
-  id: uuid('id').primaryKey().notNull().defaultRandom(),
-  createdAt: timestamp('createdAt').notNull(),
-  title: text('title').notNull(),
-  userId: uuid('userId')
-    .notNull()
-    .references(() => user.id),
-  visibility: varchar('visibility', { enum: ['public', 'private'] })
-    .notNull()
-    .default('private'),
+export const users = pgTable('users', {
+  id: uuid('id').primaryKey(),
+  email: text('email').notNull(),
+  name: text('name').notNull(),
+  role: text('role').notNull(),
+  businessId: uuid('business_id').references(() => businesses.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
 });
 
-export type Chat = InferSelectModel<typeof chat>;
-
-export const message = pgTable('Message', {
-  id: uuid('id').primaryKey().notNull().defaultRandom(),
-  chatId: uuid('chatId')
-    .notNull()
-    .references(() => chat.id),
-  role: varchar('role').notNull(),
-  content: json('content').notNull(),
-  createdAt: timestamp('createdAt').notNull(),
+export const businessAccesses = pgTable('business_accesses', {
+  id: uuid('id').primaryKey(),
+  accessingBusinessId: uuid('accessing_business_id').references(() => businesses.id, { onDelete: 'cascade' }),
+  targetBusinessId: uuid('target_business_id').references(() => businesses.id, { onDelete: 'cascade' }),
+  hasAccess: boolean('has_access'),
+  accessType: text('access_type'),
+  expiresAt: timestamp('expires_at'),
+  createdAt: timestamp('created_at').notNull().defaultNow()
 });
 
-export type Message = InferSelectModel<typeof message>;
+export const conversations = pgTable('conversations', {
+  id: uuid('id').primaryKey(),
+  userId: uuid('user_id').references(() => users.id),
+  businessId: uuid('business_id').references(() => businesses.id, { onDelete: 'set null' }),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow()
+});
 
-export const vote = pgTable(
-  'Vote',
-  {
-    chatId: uuid('chatId')
-      .notNull()
-      .references(() => chat.id),
-    messageId: uuid('messageId')
-      .notNull()
-      .references(() => message.id),
-    isUpvoted: boolean('isUpvoted').notNull(),
-  },
-  (table) => {
-    return {
-      pk: primaryKey({ columns: [table.chatId, table.messageId] }),
-    };
-  },
-);
+export const messages = pgTable('messages', {
+  id: uuid('id').primaryKey(),
+  conversationId: uuid('conversation_id').references(() => conversations.id),
+  senderId: uuid('sender_id').references(() => users.id),
+  role: text('role'),
+  content: text('content'),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
 
-export type Vote = InferSelectModel<typeof vote>;
+export const ragChunks = pgTable('rag_chunks', {
+  id: uuid('id').primaryKey(),
+  businessId: uuid('business_id').references(() => businesses.id, { onDelete: 'set null' }),
+  chunkText: text('chunk_text'),
+  embedding: varchar('embedding', { length: 1536 }),
+  metadata: jsonb('metadata'),
+  createdAt: timestamp('created_at').notNull().defaultNow()
+});
 
-export const document = pgTable(
-  'Document',
-  {
-    id: uuid('id').notNull().defaultRandom(),
-    createdAt: timestamp('createdAt').notNull(),
-    title: text('title').notNull(),
-    content: text('content'),
-    userId: uuid('userId')
-      .notNull()
-      .references(() => user.id),
-  },
-  (table) => {
-    return {
-      pk: primaryKey({ columns: [table.id, table.createdAt] }),
-    };
-  },
-);
-
-export type Document = InferSelectModel<typeof document>;
-
-export const suggestion = pgTable(
-  'Suggestion',
-  {
-    id: uuid('id').notNull().defaultRandom(),
-    documentId: uuid('documentId').notNull(),
-    documentCreatedAt: timestamp('documentCreatedAt').notNull(),
-    originalText: text('originalText').notNull(),
-    suggestedText: text('suggestedText').notNull(),
-    description: text('description'),
-    isResolved: boolean('isResolved').notNull().default(false),
-    userId: uuid('userId')
-      .notNull()
-      .references(() => user.id),
-    createdAt: timestamp('createdAt').notNull(),
-  },
-  (table) => ({
-    pk: primaryKey({ columns: [table.id] }),
-    documentRef: foreignKey({
-      columns: [table.documentId, table.documentCreatedAt],
-      foreignColumns: [document.id, document.createdAt],
-    }),
-  }),
-);
-
-export type Suggestion = InferSelectModel<typeof suggestion>;
+export const ragQueries = pgTable('rag_queries', {
+  id: uuid('id').primaryKey(),
+  userId: uuid('user_id').references(() => users.id),
+  businessId: uuid('business_id').references(() => businesses.id, { onDelete: 'set null' }),
+  queryText: text('query_text'),
+  responseText: text('response_text'),
+  timestamp: timestamp('timestamp').notNull().defaultNow()
+});
