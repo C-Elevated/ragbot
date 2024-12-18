@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     ppr: false
+  },
+  poweredByHeader: false,
+  typescript: {
+    ignoreBuildErrors: false
   }
 };
 
