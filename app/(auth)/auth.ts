@@ -1,34 +1,54 @@
 
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
-import { cookies } from 'next/headers';
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 export async function auth() {
-  const cookieStore = await cookies();
-  const supabase = createServerComponentClient({ 
-    cookies: () => cookieStore 
+  const supabase = createServerClient({
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    getRequestHeader: () => undefined,
+    getCookie: (name) => cookies().get(name)?.value,
+    setCookie: (name, value, options) => cookies().set(name, value, options),
   });
-  
-  const { data: { session } } = await supabase.auth.getSession();
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
   return session;
 }
 
-export async function signIn(provider: 'credentials', credentials: { email: string; password: string; redirect?: boolean }) {
-  const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
-  
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email: credentials.email,
-    password: credentials.password,
+export async function signIn({
+  email,
+  password,
+}: {
+  email: string;
+  password: string;
+}) {
+  const supabase = createServerClient({
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    getRequestHeader: () => undefined,
+    getCookie: (name) => cookies().get(name)?.value,
+    setCookie: (name, value, options) => cookies().set(name, value, options),
   });
 
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
   if (error) throw error;
   return data;
 }
 
 export async function signOut({ redirectTo }: { redirectTo: string }) {
-  const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
-  
+  const supabase = createServerClient({
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    getRequestHeader: () => undefined,
+    getCookie: (name) => cookies().get(name)?.value,
+    setCookie: (name, value, options) => cookies().set(name, value, options),
+  });
+
   await supabase.auth.signOut();
   return redirectTo;
 }
