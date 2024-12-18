@@ -1,3 +1,4 @@
+
 import { cookies } from 'next/headers';
 import { notFound } from 'next/navigation';
 
@@ -7,8 +8,7 @@ import { DEFAULT_MODEL_NAME, models } from '@/lib/ai/models';
 import { getChatById, getMessagesByChatId } from '@/lib/db/queries';
 import { convertToUIMessages } from '@/lib/utils';
 
-export default async function Page(props: { params: Promise<{ id: string }> }) {
-  const params = await props.params;
+export default async function ChatPage({ params }: { params: { id: string } }) {
   const { id } = params;
   const chat = await getChatById({ id });
 
