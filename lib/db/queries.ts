@@ -6,15 +6,15 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 
 import {
-  user,
-  chat,
+  users,
+  conversations,
+  businesses,
+  messages,
+  ragChunks,
+  ragQueries,
+  businessAccesses,
   type User,
-  document,
-  type Suggestion,
-  suggestion,
   type Message,
-  message,
-  vote,
 } from './schema';
 
 // Optionally, if not using email/pass login, you can
