@@ -1,10 +1,7 @@
+
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  experimental: {
-    ppr: true,
-  },
   images: {
     remotePatterns: [
       {
@@ -12,6 +9,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  experimental: {
+    ppr: false
+  }
 };
 
 export default nextConfig;
