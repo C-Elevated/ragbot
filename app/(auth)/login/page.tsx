@@ -18,7 +18,8 @@ export default function Page() {
   const handleSubmit = async (formData: FormData) => {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
-    
+    setEmail(email);
+
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -27,10 +28,12 @@ export default function Page() {
 
     if (error) {
       toast.error('Invalid credentials!');
-    } else {
-      setIsSuccessful(true);
-      router.refresh();
+      return;
     }
+    
+    setIsSuccessful(true);
+    router.push('/');
+    router.refresh();
   };
 
   return (
