@@ -9,6 +9,12 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  auth: {
+    redirects: {
+      callback: '/auth/callback',
+      afterAuth: '/',
+    }
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
