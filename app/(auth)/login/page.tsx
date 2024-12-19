@@ -18,7 +18,8 @@ export default function Page() {
   const handleSubmit = async (formData: FormData) => {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
-    
+    setEmail(email);
+
     const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({
       email,
@@ -27,14 +28,16 @@ export default function Page() {
 
     if (error) {
       toast.error('Invalid credentials!');
-    } else {
-      setIsSuccessful(true);
-      router.refresh();
+      return;
     }
+    
+    setIsSuccessful(true);
+    router.push('/');
+    router.refresh();
   };
 
   return (
-    <div className="flex h-dvh w-screen items-start pt-12 md:pt-0 md:items-center justify-center bg-background">
+    <div className="flex h-dvh w-screen items-start pt-12 md:pt-0 md:items-center justify-center bg-background font-sans">
       <div className="w-full max-w-md overflow-hidden rounded-2xl flex flex-col gap-12">
         <div className="flex flex-col items-center justify-center gap-2 px-4 text-center sm:px-16">
           <h3 className="text-xl font-semibold dark:text-zinc-50">Sign In</h3>
