@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { supabase } from '@/lib/supabase';
+import { createClient } from '@/lib/supabase/client';
 
 import { AuthForm } from '@/components/auth-form';
 import { SubmitButton } from '@/components/submit-button';
@@ -19,6 +19,7 @@ export default function Page() {
     const email = formData.get('email') as string;
     const password = formData.get('password') as string;
     
+    const supabase = createClient();
     const { error } = await supabase.auth.signInWithPassword({
       email,
       password,
