@@ -16,6 +16,11 @@ const nextConfig: NextConfig = {
         destination: '/api/auth/callback',
         permanent: false,
       },
+      {
+        source: '/auth/confirm',
+        destination: '/auth/callback',
+        permanent: false,
+      }
     ];
   },
   auth: {
