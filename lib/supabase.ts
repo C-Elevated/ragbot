@@ -1,3 +1,7 @@
 
-// This file is intentionally left empty as we're now using separate client/server Supabase instances
-// See lib/supabase/client.ts and lib/supabase/server.ts
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
