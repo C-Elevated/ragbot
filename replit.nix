@@ -1,6 +1,6 @@
 
 { pkgs }: {
   deps = [
-    pkgs.latest.supabase-cli
+    pkgs.supabase-cli
   ];
 }
