@@ -1,20 +1,3 @@
 
-import { createClient } from '@supabase/supabase-js';
-
-if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-  throw new Error('Missing Supabase environment variables');
-}
-
-export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-  {
-    db: {
-      schema: 'public'
-    },
-    auth: {
-      persistSession: true,
-      autoRefreshToken: true,
-    }
-  }
-);
+// This file is intentionally left empty as we're now using separate client/server Supabase instances
+// See lib/supabase/client.ts and lib/supabase/server.ts
