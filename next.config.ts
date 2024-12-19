@@ -9,6 +9,15 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      {
+        source: '/auth/callback',
+        destination: '/api/auth/callback',
+        permanent: false,
+      },
+    ];
+  },
   auth: {
     redirects: {
       callback: '/auth/callback',
@@ -25,9 +34,6 @@ const nextConfig: NextConfig = {
     ppr: false
   },
   poweredByHeader: false,
-  typescript: {
-    ignoreBuildErrors: false
-  }
 };
 
 export default nextConfig;
