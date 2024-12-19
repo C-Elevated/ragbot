@@ -5,11 +5,14 @@ import { cookies } from 'next/headers';
 
 import { customModel } from '@/lib/ai';
 import {
+  createChat,
   deleteMessagesByChatIdAfterTimestamp,
   getMessageById,
   updateChatVisiblityById,
+  saveMessages,
 } from '@/lib/db/queries';
 import { VisibilityType } from '@/components/visibility-selector';
+import { auth } from '../(auth)/auth';
 
 export async function saveModelId(model: string) {
   const cookieStore = await cookies();
@@ -36,6 +39,30 @@ export async function generateTitleFromUserMessage({
 
 export async function deleteTrailingMessages({ id }: { id: string }) {
   const [message] = await getMessageById({ id });
+
+export async function createNewChat() {
+  const session = await auth();
+  if (!session?.user) return null;
+  
+  const chat = await createChat({
+    userId: session.user.id,
+    title: 'New Chat',
+    visibility: 'private'
+  });
+  
+  return chat;
+}
+
+export async function saveMessage({ chatId, message, role }) {
+  await saveMessages({
+    messages: [{
+      chatId,
+      content: message,
+      role,
+    }]
+  });
+}
+
 
   await deleteMessagesByChatIdAfterTimestamp({
     chatId: message.chatId,
