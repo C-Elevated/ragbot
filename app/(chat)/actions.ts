@@ -1,3 +1,4 @@
+
 'use server';
 
 import { type CoreUserMessage, generateText } from 'ai';
@@ -39,6 +40,11 @@ export async function generateTitleFromUserMessage({
 
 export async function deleteTrailingMessages({ id }: { id: string }) {
   const [message] = await getMessageById({ id });
+  await deleteMessagesByChatIdAfterTimestamp({
+    chatId: message.chatId,
+    timestamp: message.createdAt,
+  });
+}
 
 export async function createNewChat() {
   const session = await auth();
@@ -60,13 +66,6 @@ export async function saveMessage({ chatId, message, role }) {
       content: message,
       role,
     }]
-  });
-}
-
-
-  await deleteMessagesByChatIdAfterTimestamp({
-    chatId: message.chatId,
-    timestamp: message.createdAt,
   });
 }
 
