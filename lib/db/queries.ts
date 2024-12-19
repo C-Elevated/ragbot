@@ -158,15 +158,38 @@ export async function downvoteMessage(messageId: string) {
 }
 
 
-export async function getMessageVoteCount(messageId: string) {
-    try {
-      const [message] = await db.select({
-        upvotes: messages.upvotes,
-        downvotes: messages.downvotes,
-      }).from(messages).where(eq(messages.id, messageId))
-      return message;
-    } catch (error) {
-        console.error('Failed to get message vote count');
-        throw error;
-    }
+export async function getVotesByChatId({ id }: { id: string }) {
+  try {
+    return await db.select().from(messages)
+      .where(eq(messages.conversationId, id));
+  } catch (error) {
+    console.error('Failed to get votes');
+    throw error;
+  }
+}
+
+export async function voteMessage({ 
+  chatId, 
+  messageId, 
+  type 
+}: { 
+  chatId: string; 
+  messageId: string; 
+  type: 'up' | 'down' 
+}) {
+  try {
+    const updateObj = type === 'up' 
+      ? { upvotes: sql`upvotes + 1` }
+      : { downvotes: sql`downvotes + 1` };
+      
+    return await db.update(messages)
+      .set(updateObj)
+      .where(and(
+        eq(messages.id, messageId),
+        eq(messages.conversationId, chatId)
+      ));
+  } catch (error) {
+    console.error('Failed to vote on message');
+    throw error;
+  }
 }
