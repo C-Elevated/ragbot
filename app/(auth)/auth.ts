@@ -1,42 +1,69 @@
 
-import { type User } from '@/lib/db/schema';
-import { DrizzleAdapter } from '@auth/drizzle-adapter';
-import { db } from '@/lib/db';
-import NextAuth from 'next-auth';
-import Credentials from 'next-auth/providers/credentials';
-import { compare } from 'bcrypt-ts';
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
-export const {
-  handlers: { GET, POST },
-  auth,
-  signIn,
-  signOut,
-} = NextAuth({
-  adapter: DrizzleAdapter(db),
-  pages: {
-    signIn: '/login',
-    signUp: '/register',
-  },
-  providers: [
-    Credentials({
-      credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' }
+export async function auth() {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name) => cookieStore.get(name)?.value,
+        set: (name, value, options) => cookieStore.set(name, value, options),
+        remove: (name, options) => cookieStore.delete(name, options),
       },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null;
-        
-        const [user] = await db.select().from(users).where(eq(users.email, credentials.email));
-        if (!user) return null;
-        
-        const isValid = await compare(credentials.password, user.password);
-        if (!isValid) return null;
-        
-        return user;
-      }
-    })
-  ],
-  session: {
-    strategy: 'jwt'
-  }
-});
+    }
+  );
+
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  return session;
+}
+
+export async function signIn({
+  email,
+  password,
+}: {
+  email: string;
+  password: string;
+}) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name) => cookieStore.get(name)?.value,
+        set: (name, value, options) => cookieStore.set(name, value, options),
+        remove: (name, options) => cookieStore.delete(name, options),
+      },
+    }
+  );
+
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function signOut({ redirectTo }: { redirectTo: string }) {
+  const cookieStore = await cookies();
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get: (name) => cookieStore.get(name)?.value,
+        set: (name, value, options) => cookieStore.set(name, value, options),
+        remove: (name, options) => cookieStore.delete(name, options),
+      },
+    }
+  );
+
+  await supabase.auth.signOut();
+  return redirectTo;
+}
