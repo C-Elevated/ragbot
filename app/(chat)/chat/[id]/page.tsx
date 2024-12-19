@@ -9,7 +9,7 @@ import { getChatById, getMessagesByChatId } from '@/lib/db/queries';
 import { convertToUIMessages } from '@/lib/utils';
 
 export default async function ChatPage({ params }: { params: { id: string } }) {
-  const { id } = params;
+  const id = await params.id;
   const chat = await getChatById({ id });
 
   if (!chat) {
