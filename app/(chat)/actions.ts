@@ -6,17 +6,17 @@ import { cookies } from 'next/headers';
 
 import { customModel } from '@/lib/ai';
 import {
-  createChat,
+  createConversation,
   deleteMessagesByChatIdAfterTimestamp,
   getMessageById,
-  updateChatVisiblityById,
+  updateConversationVisibilityById,
   saveMessages,
 } from '@/lib/db/queries';
 import { VisibilityType } from '@/components/visibility-selector';
 import { auth } from '../(auth)/auth';
 
 export async function saveModelId(model: string) {
-  const cookieStore = await cookies();
+  const cookieStore = cookies();
   cookieStore.set('model-id', model);
 }
 
@@ -50,7 +50,7 @@ export async function createNewChat() {
   const session = await auth();
   if (!session?.user) return null;
   
-  const chat = await createChat({
+  const chat = await createConversation({
     userId: session.user.id,
     title: 'New Chat',
     visibility: 'private'
@@ -76,5 +76,5 @@ export async function updateChatVisibility({
   chatId: string;
   visibility: VisibilityType;
 }) {
-  await updateChatVisiblityById({ chatId, visibility });
+  await updateConversationVisibilityById({ chatId, visibility });
 }
