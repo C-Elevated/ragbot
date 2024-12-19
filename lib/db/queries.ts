@@ -37,6 +37,34 @@ export async function createUser(email: string, password: string) {
 
   try {
     return await db.insert(user).values({ email, password: hash });
+
+export async function createChat({
+  userId,
+  title,
+  visibility,
+}: {
+  userId: string;
+  title: string;
+  visibility: 'private' | 'public';
+}) {
+  try {
+    const [chat] = await db
+      .insert(conversations)
+      .values({
+        id: crypto.randomUUID(),
+        userId,
+        title,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      })
+      .returning();
+    return chat;
+  } catch (error) {
+    console.error('Failed to create chat in database');
+    throw error;
+  }
+}
+
   } catch (error) {
     console.error('Failed to create user in database');
     throw error;
