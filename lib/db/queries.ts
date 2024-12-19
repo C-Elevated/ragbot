@@ -1,8 +1,7 @@
-
 import 'server-only';
 
 import { genSaltSync, hashSync } from 'bcrypt-ts';
-import { and, asc, desc, eq, gt, gte } from 'drizzle-orm';
+import { and, asc, desc, eq, gt, gte, sql } from 'drizzle-orm';
 
 import { db } from './index';
 import {
@@ -134,4 +133,40 @@ export async function updateConversationVisibilityById({
     console.error('Failed to update conversation visibility');
     throw error;
   }
+}
+
+// Added vote-related functions.  These are placeholders and should be replaced with actual implementation.
+export async function upvoteMessage(messageId: string) {
+    try {
+        // Implement upvote logic here
+        return await db.execute(sql`UPDATE messages SET upvotes = upvotes + 1 WHERE id = ${messageId}`);
+    } catch (error) {
+        console.error('Failed to upvote message');
+        throw error;
+    }
+}
+
+export async function downvoteMessage(messageId: string) {
+    try {
+        // Implement downvote logic here
+        return await db.execute(sql`UPDATE messages SET downvotes = downvotes + 1 WHERE id = ${messageId}`);
+
+    } catch (error) {
+        console.error('Failed to downvote message');
+        throw error;
+    }
+}
+
+
+export async function getMessageVoteCount(messageId: string) {
+    try {
+      const [message] = await db.select({
+        upvotes: messages.upvotes,
+        downvotes: messages.downvotes,
+      }).from(messages).where(eq(messages.id, messageId))
+      return message;
+    } catch (error) {
+        console.error('Failed to get message vote count');
+        throw error;
+    }
 }
